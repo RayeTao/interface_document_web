@@ -32,6 +32,7 @@ public class LoginService {
                 resultInfo.setSuccess(true);
                 resultInfo.setCode(Constant.SUCCESS_CODE);
                 resultInfo.setMessage(Constant.LOGIN_SUCCESS_MESSAGE);
+                resultInfo.setData(userByPassword);
             }else{
                 resultInfo.setSuccess(false);
                 resultInfo.setCode(Constant.FAIL_CODE);
