@@ -6,6 +6,7 @@ import com.egova.api.apiInfo.dao.ApiInfoDAO;
 import com.egova.api.apiInfo.dao.ApiParamsDAO;
 import com.egova.api.apiInfo.pojo.ApiInfo;
 import com.egova.api.apiInfo.pojo.ApiParams;
+import com.egova.api.base.Constant;
 import com.egova.api.base.ResultInfo;
 import com.fasterxml.jackson.databind.util.JSONPObject;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by taoran on 2018/11/23
@@ -90,5 +92,32 @@ public class ApiInfoService {
         }
 
        return resultInfo;
+    }
+
+    public ResultInfo getApiList(Long menuId) {
+        ResultInfo resultInfo = new ResultInfo(true);
+        try {
+            List<ApiInfo> list = apiInfoDAO.findByMenuId(menuId);
+            if(list != null && list.size() > 0){
+              for(ApiInfo apiInfo : list){
+                  List<ApiParams> requestList = apiParamsDAO.findByApiIdAndParamsType(apiInfo.getApiId(),0);
+                  if(requestList != null && requestList.size() > 0){
+                      apiInfo.setRequestList(requestList);
+                  }
+                  List<ApiParams> responseList = apiParamsDAO.findByApiIdAndParamsType(apiInfo.getApiId(),1);
+                  if(responseList != null && responseList.size() > 0){
+                      apiInfo.setResponseList(responseList);
+                  }
+              }
+            }
+            resultInfo.setCode(Constant.SUCCESS_CODE);
+            resultInfo.setData(list);
+        } catch (Exception e) {
+            resultInfo.setCode(Constant.FAIL_CODE);
+            resultInfo.setSuccess(false);
+            resultInfo.setMessage("获取数据失败");
+            logger.error(e.getMessage(),e);
+        }
+        return resultInfo;
     }
 }

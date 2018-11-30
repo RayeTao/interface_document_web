@@ -4,6 +4,7 @@ import lombok.Data;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by taoran on 2018/11/19
@@ -29,4 +30,9 @@ public class ApiInfo {
     @Column(columnDefinition = "INT default 0",nullable = false)
     private int deleteFlag = 0;
     private String creatorName;
+
+    @Transient
+    private List requestList;
+    @Transient
+    private List responseList;
 }
