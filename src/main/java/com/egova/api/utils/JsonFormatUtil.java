@@ -46,7 +46,7 @@ public class JsonFormatUtil {
      * @param json 未格式化的JSON字符串。
      * @return 格式化的JSON字符串。
      */
-    public String formatJson(String json){
+    public static String formatJson(String json){
 
         StringBuffer result = new StringBuffer();
 
@@ -112,7 +112,7 @@ public class JsonFormatUtil {
      * @param number 缩进次数。
      * @return 指定缩进次数的字符串。
      */
-    public String indent(int number){
+    public static String indent(int number){
         StringBuffer result = new StringBuffer();
         for (int i = 0; i < number; i++) {
             result.append(SPACE);

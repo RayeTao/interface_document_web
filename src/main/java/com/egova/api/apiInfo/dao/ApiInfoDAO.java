@@ -11,4 +11,6 @@ import java.util.List;
 public interface ApiInfoDAO  extends JpaRepository<ApiInfo,Long> {
 
     List<ApiInfo> findByMenuId(Long menuId);
+
+    ApiInfo findByApiId(Long apiId);
 }

@@ -11,4 +11,6 @@ import java.util.List;
 public interface ApiParamsDAO extends JpaRepository<ApiParams,Long> {
 
     List<ApiParams> findByApiIdAndParamsType(Long apiId, int paramsType);
+
+    void deleteByApiId(Long apiId);
 }
