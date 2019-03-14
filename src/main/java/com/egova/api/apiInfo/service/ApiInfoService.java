@@ -1,6 +1,5 @@
 package com.egova.api.apiInfo.service;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.egova.api.apiInfo.dao.ApiInfoDAO;
@@ -9,11 +8,13 @@ import com.egova.api.apiInfo.pojo.ApiInfo;
 import com.egova.api.apiInfo.pojo.ApiParams;
 import com.egova.api.base.Constant;
 import com.egova.api.base.ResultInfo;
+import com.egova.api.utils.HttpUtils;
 import com.egova.api.utils.JsonFormatUtil;
-import com.fasterxml.jackson.databind.util.JSONPObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.egova.api.utils.RedisUtil;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -23,15 +24,19 @@ import java.util.*;
  */
 @Service
 public class ApiInfoService {
-    private static final Logger logger = LoggerFactory.getLogger(ApiInfoService.class);
+    private static final Logger logger = Logger.getLogger(ApiInfoService.class);
 
     @Autowired
     ApiInfoDAO apiInfoDAO;
     @Autowired
     ApiParamsDAO apiParamsDAO;
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+    @Autowired
+    RedisUtil redisUtil;
 
-    public ResultInfo saveApiInfo(String apiInfo){
-       ResultInfo resultInfo = new ResultInfo(true);
+    public ResultInfo saveApiInfo(String apiInfo) {
+        ResultInfo resultInfo = new ResultInfo(true);
         try {
             JSONObject json = JSONObject.parseObject(apiInfo);
             String data = json.getString("data");
@@ -59,11 +64,11 @@ public class ApiInfoService {
             info.setCreatorName(userName);
             info.setMenuId(Long.valueOf(menuId));
             ApiInfo infoResult = apiInfoDAO.save(info);
-            if(infoResult != null){
+            if (infoResult != null) {
                 JSONArray requestParamsArray = JSONArray.parseArray(requestParamsForm);
                 JSONArray responseParamsArray = JSONArray.parseArray(responseParamsForm);
-                if(requestParamsArray != null && requestParamsArray.size() >0){
-                    for (int i = 0; i <requestParamsArray.size() ; i++) {
+                if (requestParamsArray != null && requestParamsArray.size() > 0) {
+                    for (int i = 0; i < requestParamsArray.size(); i++) {
                         JSONObject jsonParams = JSONObject.parseObject(requestParamsArray.get(i).toString());
                         ApiParams apiParams = new ApiParams();
                         apiParams.setParamsType(0);
@@ -76,8 +81,8 @@ public class ApiInfoService {
                         apiParamsDAO.save(apiParams);
                     }
                 }
-                if(responseParamsArray != null && responseParamsArray.size() >0){
-                    for (int i = 0; i <responseParamsArray.size() ; i++) {
+                if (responseParamsArray != null && responseParamsArray.size() > 0) {
+                    for (int i = 0; i < responseParamsArray.size(); i++) {
                         JSONObject jsonParams = JSONObject.parseObject(responseParamsArray.get(i).toString());
                         ApiParams apiParams = new ApiParams();
                         apiParams.setParamsType(1);
@@ -94,9 +99,9 @@ public class ApiInfoService {
             resultInfo.setCode(Constant.SUCCESS_CODE);
             return resultInfo;
         } catch (NumberFormatException e) {
-           resultInfo.setSuccess(false);
-           resultInfo.setCode(Constant.FAIL_CODE);
-           logger.error("添加接口信息失败:"+e.getMessage(),e);
+            resultInfo.setSuccess(false);
+            resultInfo.setCode(Constant.FAIL_CODE);
+            logger.error("添加接口信息失败:" + e.getMessage(), e);
         }
         return resultInfo;
     }
@@ -105,14 +110,14 @@ public class ApiInfoService {
         ResultInfo resultInfo = new ResultInfo(true);
         try {
             List<ApiInfo> list = apiInfoDAO.findByMenuId(menuId);
-            if(list != null && list.size() > 0){
-                for (ApiInfo apiInfo : list){
-                    List<ApiParams> requestList = apiParamsDAO.findByApiIdAndParamsType(apiInfo.getApiId(),0);
-                    if(requestList != null && requestList.size() > 0){
+            if (list != null && list.size() > 0) {
+                for (ApiInfo apiInfo : list) {
+                    List<ApiParams> requestList = apiParamsDAO.findByApiIdAndParamsType(apiInfo.getApiId(), 0);
+                    if (requestList != null && requestList.size() > 0) {
                         apiInfo.setRequestList(requestList);
                     }
-                    List<ApiParams> responseList = apiParamsDAO.findByApiIdAndParamsType(apiInfo.getApiId(),1);
-                    if(responseList != null && responseList.size() > 0){
+                    List<ApiParams> responseList = apiParamsDAO.findByApiIdAndParamsType(apiInfo.getApiId(), 1);
+                    if (responseList != null && responseList.size() > 0) {
                         apiInfo.setResponseList(responseList);
                     }
                 }
@@ -123,7 +128,7 @@ public class ApiInfoService {
             resultInfo.setCode(Constant.FAIL_CODE);
             resultInfo.setSuccess(false);
             resultInfo.setMessage("获取数据失败");
-            logger.error(e.getMessage(),e);
+            logger.error(e.getMessage(), e);
         }
         return resultInfo;
     }
@@ -131,35 +136,35 @@ public class ApiInfoService {
     public ResultInfo getApiInfoDetail(Long apiId) {
         ResultInfo resultInfo = new ResultInfo(true);
         try {
-            ApiInfo  apiInfo = apiInfoDAO.findByApiId(apiId);
-            List<ApiParams> requestList = apiParamsDAO.findByApiIdAndParamsType(apiId,0);
-            if(requestList != null && requestList.size() > 0){
+            ApiInfo apiInfo = apiInfoDAO.findByApiId(apiId);
+            List<ApiParams> requestList = apiParamsDAO.findByApiIdAndParamsType(apiId, 0);
+            if (requestList != null && requestList.size() > 0) {
                 apiInfo.setRequestList(requestList);
-                Map<String,Object> requestMap = new HashMap<>();
-                for(ApiParams apiParams : requestList){
-                    requestMap.put(apiParams.getParamsKey(),apiParams.getParamsValue());
+                Map<String, Object> requestMap = new HashMap<>();
+                for (ApiParams apiParams : requestList) {
+                    requestMap.put(apiParams.getParamsKey(), apiParams.getParamsValue());
                 }
                 JSONObject jsonObject = new JSONObject(requestMap);
                 String requestJson = jsonObject.toString();
-                if(apiInfo.getRequestParams() == null || apiInfo.getRequestParams().equals("")){
+                if (apiInfo.getRequestParams() == null || apiInfo.getRequestParams().equals("")) {
                     apiInfo.setRequestParams(JsonFormatUtil.formatJson(requestJson));
-                }else{
+                } else {
                     apiInfo.setRequestParams(JsonFormatUtil.formatJson(apiInfo.getRequestParams()));
                 }
 
             }
-            List<ApiParams> responseList = apiParamsDAO.findByApiIdAndParamsType(apiId,1);
-            if(responseList != null && responseList.size() > 0){
+            List<ApiParams> responseList = apiParamsDAO.findByApiIdAndParamsType(apiId, 1);
+            if (responseList != null && responseList.size() > 0) {
                 apiInfo.setResponseList(responseList);
-                Map<String,Object> responseMap = new HashMap<>();
-                for(ApiParams apiParams : responseList){
-                    responseMap.put(apiParams.getParamsKey(),apiParams.getParamsValue());
+                Map<String, Object> responseMap = new HashMap<>();
+                for (ApiParams apiParams : responseList) {
+                    responseMap.put(apiParams.getParamsKey(), apiParams.getParamsValue());
                 }
                 JSONObject jsonObject = new JSONObject(responseMap);
                 String responseJson = jsonObject.toString();
-                if(apiInfo.getResponseParams() == null || apiInfo.getResponseParams().equals("")){
+                if (apiInfo.getResponseParams() == null || apiInfo.getResponseParams().equals("")) {
                     apiInfo.setResponseParams(JsonFormatUtil.formatJson(responseJson));
-                }else{
+                } else {
                     apiInfo.setResponseParams(JsonFormatUtil.formatJson(apiInfo.getResponseParams()));
                 }
             }
@@ -170,7 +175,7 @@ public class ApiInfoService {
             resultInfo.setSuccess(false);
             resultInfo.setCode(Constant.FAIL_CODE);
             resultInfo.setMessage(Constant.FAIL_MESSAGE);
-            logger.error("获取接口信息详情失败："+e.getMessage(),e);
+            logger.error("获取接口信息详情失败：" + e.getMessage(), e);
         }
         return resultInfo;
     }
@@ -191,8 +196,29 @@ public class ApiInfoService {
         } catch (Exception e) {
             resultInfo.setSuccess(false);
             resultInfo.setCode(Constant.FAIL_CODE);
-            logger.error("删除接口信息失败:"+e.getMessage(),e);
+            logger.error("删除接口信息失败:" + e.getMessage(), e);
         }
+        return resultInfo;
+    }
+
+    public ResultInfo getParamsByUrl(String apiInfo) {
+        ResultInfo resultInfo = new ResultInfo(true);
+        JSONObject json = JSONObject.parseObject(apiInfo);
+        String data = json.getString("data");
+        JSONObject jsonData = JSONObject.parseObject(data);
+        String apiInfoForm = jsonData.getString("apiInfoForm");
+        JSONObject jsonApiInfo = JSONObject.parseObject(apiInfoForm);
+        String serverAddress = jsonApiInfo.getString("serverAddress");
+        String apiUrl = jsonApiInfo.getString("apiUrl");
+        String methodType = jsonApiInfo.getString("methodType");
+        String requestParamsForm = jsonApiInfo.getString("requestList");
+        String requestParamsBody = jsonApiInfo.getString("requestParams");
+        String requestParams = "";
+        String result = "";
+        if (methodType != null && (methodType.equals("GET") || methodType.equals("ALL"))) {
+            result = HttpUtils.sendGet(serverAddress + apiUrl, requestParamsForm);
+        }
+
         return resultInfo;
     }
 }

@@ -3,6 +3,7 @@ package com.egova.api.apiInfo.web;
 import com.egova.api.apiInfo.pojo.ApiInfo;
 import com.egova.api.apiInfo.service.ApiInfoService;
 import com.egova.api.base.ResultInfo;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +23,7 @@ public class ApiController {
      * @return
      */
     @PostMapping(value = "/saveApiInfo")
+    @ApiOperation(value = "保存接口信息",notes = "保存接口信息")
     public ResultInfo saveApiInfo(@RequestBody String apiInfo){
         return apiInfoService.saveApiInfo(apiInfo);
     }
@@ -63,5 +65,15 @@ public class ApiController {
     @GetMapping(value = "/deleteApiInfo")
     public ResultInfo deleteApiInfo(@RequestParam Long apiId){
         return apiInfoService.deleteApiInfo(apiId);
+    }
+
+    /**
+     * 调用远程接口获取结果参数
+     * @param apiInfo
+     * @return
+     */
+    @PostMapping(value = "/getParamsByUrl")
+    public ResultInfo getParamsByUrl(@RequestBody String apiInfo){
+        return apiInfoService.getParamsByUrl(apiInfo);
     }
 }
